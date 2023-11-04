@@ -1,0 +1,5 @@
+﻿  main.cpp
+C:\Users\drago\source\repos\Lunar-Lander-Clone\Lunar-Lander-Clone\Entity.h(111,58): warning C4244: 'return': conversion from 'const float' to 'const int', possible loss of data
+C:\Users\drago\source\repos\Lunar-Lander-Clone\Lunar-Lander-Clone\Entity.h(112,58): warning C4244: 'return': conversion from 'const float' to 'const int', possible loss of data
+C:\Users\drago\source\repos\Lunar-Lander-Clone\Lunar-Lander-Clone\main.cpp(158,36): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+  Lunar-Lander-Clone.vcxproj -> C:\Users\drago\source\repos\Lunar-Lander-Clone\Lunar-Lander-Clone\Debug\Lunar-Lander-Clone.exe
