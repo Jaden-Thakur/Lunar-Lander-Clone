@@ -14,7 +14,7 @@
 #define LOG(argument) std::cout << argument << std::endl;
 #define STB_IMAGE_IMPLEMENTATION
 #define FIXED_TIMESTEP 0.0166666f
-#define PLATFORM_COUNT 5
+#define PLATFORM_COUNT 20
 
 #ifdef _WINDOWS
 #include <GL/glew.h>
@@ -42,12 +42,12 @@ struct GameState
 };
 
 // ––––– CONSTANTS ––––– //
-const int WINDOW_WIDTH = 640,
-WINDOW_HEIGHT = 480;
+const int WINDOW_WIDTH = 680,
+WINDOW_HEIGHT = 400;
 
-const float BG_RED = 0.1922f,
-BG_BLUE = 0.549f,
-BG_GREEN = 0.9059f,
+const float BG_RED = 0.0f,
+BG_BLUE = 0.1f,
+BG_GREEN = 0.0f,
 BG_OPACITY = 1.0f;
 
 const int VIEWPORT_X = 0,
@@ -176,10 +176,37 @@ void initialise()
     g_state.platforms = new Entity[PLATFORM_COUNT];
 
     // Set the type of every platform entity to PLATFORM
-    for (int i = 0; i < PLATFORM_COUNT; i++)
+    for (int i = 0; i < 5; i++)
     {
         g_state.platforms[i].m_texture_id = platform_texture_id;
-        g_state.platforms[i].set_position(glm::vec3(i - 1.0f, -3.0f, 0.0f));
+        g_state.platforms[i].set_position(glm::vec3(i - 2.0f, -3.0f, 0.0f));
+        g_state.platforms[i].set_width(1.0f);
+        g_state.platforms[i].set_entity_type(PLATFORM);
+        g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
+    }
+
+    for (int i = 5; i < 10; i++)
+    {
+        g_state.platforms[i].m_texture_id = platform_texture_id;
+        g_state.platforms[i].set_position(glm::vec3(i - 7.0f, 3.0f, 0.0f));
+        g_state.platforms[i].set_width(1.0f);
+        g_state.platforms[i].set_entity_type(PLATFORM);
+        g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
+    }
+
+    for (int i = 10; i < 15; i++)
+    {
+        g_state.platforms[i].m_texture_id = platform_texture_id;
+        g_state.platforms[i].set_position(glm::vec3(-2.0f, i - 12.0f, 0.0f));
+        g_state.platforms[i].set_width(1.0f);
+        g_state.platforms[i].set_entity_type(PLATFORM);
+        g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
+    }
+
+    for (int i = 15; i < 20; i++)
+    {
+        g_state.platforms[i].m_texture_id = platform_texture_id;
+        g_state.platforms[i].set_position(glm::vec3(2.0f, i - 17.0f, 0.0f));
         g_state.platforms[i].set_width(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
         g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
@@ -187,7 +214,7 @@ void initialise()
 
    
 
-    // ––––– PLAYER (GEORGE) ––––– //
+    // ––––– PLAYER ––––– //
     // Existing
     g_state.player = new Entity();
     g_state.player->set_position(glm::vec3(0.0f));
@@ -199,7 +226,7 @@ void initialise()
     // Flying
     g_state.player->m_animation[0] = new int[1] {0};
     g_state.player->m_animation[1] = new int[1] {1};
-    g_state.player->m_acceleration_rate = 3.0f;
+    g_state.player->m_acceleration_rate = 0.75f;
     g_state.player->set_entity_type(PLAYER);
     g_state.player->m_animation_index = 0;
     g_state.player->m_animation_cols = 2;
@@ -234,6 +261,7 @@ void process_input()
             case SDLK_SPACE:
                 // Accelerate
                 g_state.player->m_is_accelerating = true;
+                
                 break;
             default:
                 break;
@@ -250,22 +278,16 @@ void process_input()
     //if (key_state[SDL_SCANCODE_LEFT])
     if (key_state[SDL_SCANCODE_A])
     {
-        g_state.player->set_rotate(90.0f);
-        g_state.player->rotate();
+        g_state.player->rotate(0.025);
     }
     //else if (key_state[SDL_SCANCODE_RIGHT])
-    else if (key_state[SDL_SCANCODE_D])
+    if (key_state[SDL_SCANCODE_D])
     {
-        g_state.player->set_rotate(270.0f);
-        g_state.player->rotate();
+        g_state.player->rotate(-0.025);
     }
-    else if (key_state[SDL_SCANCODE_W])
-    {
-        g_state.player->set_rotate(0.0f);
-        g_state.player->rotate();
-    }
-    else if (key_state[SDL_SCANCODE_SPACE]) {
+    if (key_state[SDL_SCANCODE_SPACE]) {
         g_state.player->m_animation_indices = g_state.player->m_animation[1];
+        g_state.player->m_is_accelerating = true;
     }
     else if (!key_state[SDL_SCANCODE_SPACE]) {
         g_state.player->m_animation_indices = g_state.player->m_animation[0];

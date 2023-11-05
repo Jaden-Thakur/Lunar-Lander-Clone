@@ -16,7 +16,7 @@ private:
 
 	// TRANSFORMATIONS
 	float m_speed;
-	float m_rotate;
+	float m_angle;
 	glm::vec3 m_movement;
 	glm::mat4 m_model_matrix;
 
@@ -66,8 +66,8 @@ public:
 	void const check_collision_y(Entity* collidable_entities, int collidable_entity_count);
 	void const check_collision_x(Entity* collidable_entities, int collidable_entity_count);
 
-	void rotate();
-	void accelerate();
+	void rotate(float angle);
+	void accelerate(float delta_time);
 
 	void activate();
 	void deactivate();
@@ -80,7 +80,7 @@ public:
 	glm::vec3  const get_acceleration()   const { return m_acceleration; };
 	float      const get_acceeleration_rate()  const { return m_acceleration_rate; };
 	float      const get_speed()          const { return m_speed; };
-	float       get_rotate()          const { return m_rotate; };
+	float      const get_angle()          const { return m_angle; };
 	int        const get_width()          const { return m_width; };
 	int        const get_height()         const { return m_height; };
 
@@ -90,7 +90,6 @@ public:
 	void const set_movement(glm::vec3 new_movement) { m_movement = new_movement; };
 	void const set_velocity(glm::vec3 new_velocity) { m_velocity = new_velocity; };
 	void const set_speed(float new_speed) { m_speed = new_speed; };
-	void const set_rotate(float new_rotate) { m_rotate = new_rotate; }
 	void const set_acceleration_rate(float new_acceleration_rate) { m_acceleration_rate = new_acceleration_rate; };
 	void const set_acceleration(glm::vec3 new_acceleration) { m_acceleration = new_acceleration; };
 	void const set_width(float new_width) { m_width = new_width; };

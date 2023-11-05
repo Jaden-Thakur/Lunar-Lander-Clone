@@ -1,5 +1,6 @@
 #define GL_SILENCE_DEPRECATION
 #define STB_IMAGE_IMPLEMENTATION
+#define LOG(argument) std::cout << argument << std::endl;
 
 #ifdef _WINDOWS
 #include <GL/glew.h>
@@ -23,20 +24,49 @@ Entity::Entity() {
     m_acceleration = glm::vec3(0.0f);
 
     // TRANSFORMATIONS
-    m_rotate = 0.0f;
     m_movement = glm::vec3(0.0f);
-    m_speed = 0;
+    m_speed = 0.0;
+    m_angle = 0.0;
     m_model_matrix = glm::mat4(1.0f);
 }
 
 Entity::~Entity() {};
 
-void Entity::rotate() {
-    this->m_model_matrix = glm::rotate(this->m_model_matrix, glm::radians(m_rotate), glm::vec3(0.0f, 0.0f, 1.0f));
+void Entity::rotate(float angle) {
+    this->m_model_matrix = glm::rotate(this->m_model_matrix, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
+    m_angle += angle;
 };
 
-void Entity::accelerate() {
-    this->m_acceleration.y += m_acceleration_rate;
+void Entity::accelerate(float delta_time) {
+    float amount_x = 0;
+    float amount_y = 0;
+    // choosing direction of acceleration
+    if (0 <= m_angle && m_angle <= 90) {
+        amount_x = (m_angle / 90);
+        amount_y = 1 - amount_x;
+        m_acceleration.x -= amount_x * m_acceleration_rate;
+        m_acceleration.y += amount_y * m_acceleration_rate;
+    }
+    else if (90 < m_angle && m_angle <= 180) {
+        amount_y = ((m_angle - 90) / 90);
+        amount_x = 1 - amount_y;
+        m_acceleration.x -= amount_x * m_acceleration_rate;
+        m_acceleration.y -= amount_y * m_acceleration_rate;
+    }
+    else if (180 < m_angle && m_angle <= 270) {
+        amount_x = ((m_angle - 180) / 90);
+        amount_y = 1 - amount_x;
+        m_acceleration.x += amount_x * m_acceleration_rate;
+        m_acceleration.y -= amount_y * m_acceleration_rate;
+    }
+    else if (270 < m_angle && m_angle <= 359) {
+        amount_y = ((m_angle - 270) / 90);
+        amount_x = 1 - amount_y;
+        m_acceleration.x += amount_x * m_acceleration_rate;
+        m_acceleration.y += amount_y * m_acceleration_rate;
+    }
+
+    
 };
 
 void Entity::activate() {
@@ -56,11 +86,38 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     m_collided_left = false;
     m_collided_right = false;
 
-    /*if (m_entity_type == ENEMY) ai_activate(player);*/
+  
+    //// ––––– FLYING ––––– //
+
+    if (m_angle > 359) {
+        m_angle = m_angle - 360.0f;
+    }
+    if (m_angle < 0) {
+        m_angle += 360;
+    }
+
+    if (m_is_accelerating)
+    {
+        // STEP 1: Immediately return the flag to its original false state
+        m_is_accelerating = false;
+        accelerate(delta_time); 
+    }
+    else {
+        m_acceleration.y = 0;
+        m_acceleration.x = 0;
+    }
+    
 
     // ––––– GRAVITY ––––– //
-    m_velocity.x = m_movement.x * m_speed;
     m_velocity += m_acceleration * delta_time;
+    m_velocity.y -= 2.0 * delta_time;
+    if (m_velocity.x > 0) {
+        m_velocity.x -= 0.5 * delta_time;
+    }
+    else if (m_velocity.x < 0) {
+        m_velocity.x += 0.5 * delta_time; 
+    }
+    
 
     m_position.y += m_velocity.y * delta_time;
     check_collision_y(collidable_entities, collidable_entity_count);
@@ -68,40 +125,15 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     m_position.x += m_velocity.x * delta_time;
     check_collision_x(collidable_entities, collidable_entity_count);
 
-    //// ––––– FLYING ––––– //
-    if (m_is_accelerating)
-    {
-        // STEP 1: Immediately return the flag to its original false state
-        m_is_accelerating = false;
+    if (m_collided_bottom) {
+        m_acceleration.x = 0;
+    }
 
-        // STEP 2: The player now acquires an upward velocity
-        if (m_rotate == 90.0f) {
-            m_acceleration.x -= m_acceleration_rate;
-        }
-        else if (m_rotate == 270.0f) {
-            m_acceleration.x += m_acceleration_rate;
-        }
-        else if (m_rotate == 0.0f) {
-            m_acceleration.y += m_acceleration_rate;
-        }
-       
-    }
-    else {
-        if (m_acceleration.y > 0) {
-            m_acceleration.y -= m_acceleration_rate;
-        }  
-        if (m_acceleration.x > 0) {
-            m_acceleration.x -= m_acceleration_rate;
-        }
-        if (m_acceleration.x < 0) {
-            m_acceleration.x += m_acceleration_rate;
-        }
-    }
 
     // ––––– TRANSFORMATIONS ––––– //
     m_model_matrix = glm::mat4(1.0f);
     m_model_matrix = glm::translate(m_model_matrix, m_position);
-    this->rotate();
+    m_model_matrix = glm::rotate(this->m_model_matrix, glm::radians(m_angle), glm::vec3(0.0f, 0.0f, 1.0f));
 }
 
 void const Entity::check_collision_y(Entity* collidable_entities, int collidable_entity_count)
