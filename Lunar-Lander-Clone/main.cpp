@@ -59,7 +59,7 @@ const char V_SHADER_PATH[] = "shaders/vertex_textured.glsl",
 F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
 const float MILLISECONDS_IN_SECOND = 1000.0;
-const char SPRITESHEET_FILEPATH[] = "assets/george_0.png"; // change
+const char SPRITESHEET_FILEPATH[] = "assets/Ship_Sprite_Sheet_2.png";
 const char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png"; // change
 
 const int NUMBER_OF_TEXTURES = 1;
@@ -196,8 +196,15 @@ void initialise()
     g_state.player->set_acceleration(glm::vec3(0.0f, -4.905f, 0.0f));
     g_state.player->m_texture_id = load_texture(SPRITESHEET_FILEPATH);
 
-    // Walking
+    // Flying
+    g_state.player->m_animation[0] = new int[1] {0};
+    g_state.player->m_animation[1] = new int[1] {1};
+    g_state.player->m_acceleration_rate = 3.0f;
     g_state.player->set_entity_type(PLAYER);
+    g_state.player->m_animation_index = 0;
+    g_state.player->m_animation_cols = 2;
+    g_state.player->m_animation_rows = 1;
+    g_state.player->m_animation_indices = g_state.player->m_animation[0];
 
 
     // ––––– GENERAL ––––– //
@@ -218,61 +225,53 @@ void process_input()
         case SDL_WINDOWEVENT_CLOSE:
             g_game_is_running = false;
             break;
-
         case SDL_KEYDOWN:
             switch (event.key.keysym.sym) {
-            case SDLK_q:
-                // Quit the game with a keystroke
+            case SDLK_ESCAPE:
+                // Quit
                 g_game_is_running = false;
                 break;
-
             case SDLK_SPACE:
-                // Jump
-                if (g_state.player->m_collided_bottom)
-                {
-                    g_state.player->m_is_jumping = true;
-                    Mix_PlayChannel(NEXT_CHNL, g_jump_sfx, 0);
-
-                    
-                     //Mix_FadeInChannel(channel_id, sound_chunk, loops, fade_in_time);
-
-
-                     
-                }
+                // Accelerate
+                g_state.player->m_is_accelerating = true;
                 break;
-
-            case SDLK_h:
-                // Stop music
-                Mix_HaltMusic();
-                break;
-
-            case SDLK_p:
-                Mix_PlayMusic(g_music, -1);
-
             default:
                 break;
             }
-
         default:
             break;
         }
     }
+
+    
 
     const Uint8* key_state = SDL_GetKeyboardState(NULL);
 
     //if (key_state[SDL_SCANCODE_LEFT])
     if (key_state[SDL_SCANCODE_A])
     {
-        g_state.player->move_left();
-        g_state.player->m_animation_indices = g_state.player->m_walking[g_state.player->LEFT];
+        g_state.player->set_rotate(90.0f);
+        g_state.player->rotate();
     }
     //else if (key_state[SDL_SCANCODE_RIGHT])
     else if (key_state[SDL_SCANCODE_D])
     {
-        g_state.player->move_right();
-        g_state.player->m_animation_indices = g_state.player->m_walking[g_state.player->RIGHT];
+        g_state.player->set_rotate(270.0f);
+        g_state.player->rotate();
+    }
+    else if (key_state[SDL_SCANCODE_W])
+    {
+        g_state.player->set_rotate(0.0f);
+        g_state.player->rotate();
+    }
+    else if (key_state[SDL_SCANCODE_SPACE]) {
+        g_state.player->m_animation_indices = g_state.player->m_animation[1];
+    }
+    else if (!key_state[SDL_SCANCODE_SPACE]) {
+        g_state.player->m_animation_indices = g_state.player->m_animation[0];
     }
 
+    // normalize movement
     if (glm::length(g_state.player->get_movement()) > 1.0f)
     {
         g_state.player->set_movement(
@@ -304,6 +303,7 @@ void update()
     }
 
     g_accumulator = delta_time;
+
 }
 
 void render()
