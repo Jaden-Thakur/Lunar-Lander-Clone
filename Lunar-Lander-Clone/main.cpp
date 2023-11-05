@@ -1,3 +1,13 @@
+/**
+* Author: Jaden Thakur
+* Assignment: Lunar Lander
+* Date due: 2023-11-08, 11:59pm
+* I pledge that I have completed this assignment without
+* collaborating with anyone else, in conformance with the
+* NYU School of Engineering Policies and Procedures on
+* Academic Misconduct.
+**/
+
 // #defines
 #define GL_SILENCE_DEPRECATION
 #define GL_GLEXT_PROTOTYPES 1
@@ -49,8 +59,8 @@ const char V_SHADER_PATH[] = "shaders/vertex_textured.glsl",
 F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
 const float MILLISECONDS_IN_SECOND = 1000.0;
-const char SPRITESHEET_FILEPATH[] = "assets/george_0.png";
-const char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png";
+const char SPRITESHEET_FILEPATH[] = "assets/george_0.png"; // change
+const char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png"; // change
 
 const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0;
@@ -60,8 +70,8 @@ const int CD_QUAL_FREQ = 44100,
 AUDIO_CHAN_AMT = 2,     // stereo
 AUDIO_BUFF_SIZE = 4096;
 
-const char BGM_FILEPATH[] = "assets/crypto.mp3",
-SFX_FILEPATH[] = "assets/bounce.wav";
+const char BGM_FILEPATH[] = "assets/crypto.mp3", // change
+SFX_FILEPATH[] = "assets/bounce.wav"; // change
 
 const int PLAY_ONCE = 0,    // play once, loop never
 NEXT_CHNL = -1,   // next available channel
@@ -115,7 +125,7 @@ GLuint load_texture(const char* filepath)
 void initialise()
 {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-    g_display_window = SDL_CreateWindow("Hello, Physics (again)!",
+    g_display_window = SDL_CreateWindow("Lunar Lander Clone",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH, WINDOW_HEIGHT,
         SDL_WINDOW_OPENGL);
@@ -166,26 +176,16 @@ void initialise()
     g_state.platforms = new Entity[PLATFORM_COUNT];
 
     // Set the type of every platform entity to PLATFORM
-    for (int i = 0; i < PLATFORM_COUNT - 2; i++)
+    for (int i = 0; i < PLATFORM_COUNT; i++)
     {
         g_state.platforms[i].m_texture_id = platform_texture_id;
         g_state.platforms[i].set_position(glm::vec3(i - 1.0f, -3.0f, 0.0f));
-        g_state.platforms[i].set_width(0.4f);
+        g_state.platforms[i].set_width(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
         g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
     }
 
-    g_state.platforms[PLATFORM_COUNT - 1].m_texture_id = platform_texture_id;
-    g_state.platforms[PLATFORM_COUNT - 1].set_position(glm::vec3(-1.5f, -2.35f, 0.0f));
-    g_state.platforms[PLATFORM_COUNT - 1].set_width(0.4f);
-    g_state.platforms[PLATFORM_COUNT - 1].set_entity_type(PLATFORM);
-    g_state.platforms[PLATFORM_COUNT - 1].update(0.0f, g_state.player, NULL, 0);
-
-    g_state.platforms[PLATFORM_COUNT - 2].m_texture_id = platform_texture_id;
-    g_state.platforms[PLATFORM_COUNT - 2].set_position(glm::vec3(2.5f, -2.5f, 0.0f));
-    g_state.platforms[PLATFORM_COUNT - 2].set_width(0.4f);
-    g_state.platforms[PLATFORM_COUNT - 2].set_entity_type(PLATFORM);
-    g_state.platforms[PLATFORM_COUNT - 2].update(0.0f, g_state.player, NULL, 0);
+   
 
     // ––––– PLAYER (GEORGE) ––––– //
     // Existing
@@ -197,23 +197,8 @@ void initialise()
     g_state.player->m_texture_id = load_texture(SPRITESHEET_FILEPATH);
 
     // Walking
-    g_state.player->m_walking[g_state.player->LEFT] = new int[4] { 1, 5, 9, 13 };
-    g_state.player->m_walking[g_state.player->RIGHT] = new int[4] { 3, 7, 11, 15 };
-    g_state.player->m_walking[g_state.player->UP] = new int[4] { 2, 6, 10, 14 };
-    g_state.player->m_walking[g_state.player->DOWN] = new int[4] { 0, 4, 8, 12 };
-
-    g_state.player->m_animation_indices = g_state.player->m_walking[g_state.player->LEFT];  // start George looking left
-    g_state.player->m_animation_frames = 4;
-    g_state.player->m_animation_index = 0;
-    g_state.player->m_animation_time = 0.0f;
-    g_state.player->m_animation_cols = 4;
-    g_state.player->m_animation_rows = 4;
-    g_state.player->set_height(0.9f);
-    g_state.player->set_width(0.9f);
     g_state.player->set_entity_type(PLAYER);
 
-    // Jumping
-    g_state.player->m_jumping_power = 3.0f;
 
     // ––––– GENERAL ––––– //
     glEnable(GL_BLEND);
