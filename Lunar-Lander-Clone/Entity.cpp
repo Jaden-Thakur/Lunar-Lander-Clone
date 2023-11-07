@@ -1,3 +1,13 @@
+/**
+* Author: Jaden Thakur
+* Assignment: Lunar Lander
+* Date due: 2023-11-08, 11:59pm
+* I pledge that I have completed this assignment without
+* collaborating with anyone else, in conformance with the
+* NYU School of Engineering Policies and Procedures on
+* Academic Misconduct.
+**/
+
 #define GL_SILENCE_DEPRECATION
 #define STB_IMAGE_IMPLEMENTATION
 #define LOG(argument) std::cout << argument << std::endl;
@@ -103,7 +113,7 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     m_collided_right = false;
 
   
-    //// ––––– FLYING ––––– //
+    //// ï¿½ï¿½ï¿½ï¿½ï¿½ FLYING ï¿½ï¿½ï¿½ï¿½ï¿½ //
 
     if (m_angle > 359) {
         m_angle = m_angle - 360.0f;
@@ -124,7 +134,7 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     }
     
 
-    // ––––– GRAVITY ––––– //
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ GRAVITY ï¿½ï¿½ï¿½ï¿½ï¿½ //
     m_velocity += m_acceleration * delta_time;
     m_velocity.y -= 2.0 * delta_time;
     if (m_velocity.x > 0) {
@@ -148,7 +158,7 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     }
 
 
-    // ––––– TRANSFORMATIONS ––––– //
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ TRANSFORMATIONS ï¿½ï¿½ï¿½ï¿½ï¿½ //
     m_model_matrix = glm::mat4(1.0f);
     m_model_matrix = glm::translate(m_model_matrix, m_position);
     m_model_matrix = glm::rotate(this->m_model_matrix, glm::radians(m_angle), glm::vec3(0.0f, 0.0f, 1.0f));
