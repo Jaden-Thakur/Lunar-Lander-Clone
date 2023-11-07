@@ -15,6 +15,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define FIXED_TIMESTEP 0.0166666f
 #define PLATFORM_COUNT 20
+#define LANDZONE_COUNT 1
 
 #ifdef _WINDOWS
 #include <GL/glew.h>
@@ -33,17 +34,20 @@
 #include "cmath"
 #include <ctime>
 #include <cstdlib>
+#include <vector>
 
 // ––––– STRUCTS AND ENUMS ––––– //
 struct GameState
 {
     Entity* player;
     Entity* platforms;
+    Entity* landzones;
+    Entity* ui;
 };
 
 // ––––– CONSTANTS ––––– //
-const int WINDOW_WIDTH = 680,
-WINDOW_HEIGHT = 400;
+const int WINDOW_WIDTH = 1000,
+WINDOW_HEIGHT = 600;
 
 const float BG_RED = 0.0f,
 BG_BLUE = 0.1f,
@@ -60,7 +64,10 @@ F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
 const float MILLISECONDS_IN_SECOND = 1000.0;
 const char SPRITESHEET_FILEPATH[] = "assets/Ship_Sprite_Sheet_2.png";
-const char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png"; // change
+const char PLATFORM_FILEPATH[] = "assets/platformPack_tile027.png"; 
+const char LANDZONE_FILEPATH[] = "assets/platformPack_tile028.png";
+const char WIN_SCREEN[] = "assets/win.png";
+const char LOSE_SCREEN[] = "assets/game_over.png";
 
 const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0;
@@ -85,6 +92,8 @@ Mix_Chunk* g_jump_sfx;
 GameState g_state;
 
 SDL_Window* g_display_window;
+bool go = false;
+bool win = false;
 bool g_game_is_running = true;
 
 ShaderProgram g_program;
@@ -143,7 +152,7 @@ void initialise()
     g_program.load(V_SHADER_PATH, F_SHADER_PATH);
 
     g_view_matrix = glm::mat4(1.0f);
-    g_projection_matrix = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
+    g_projection_matrix = glm::ortho(-15.0f, 15.0f, -10.0f, 10.0f, -1.0f, 1.0f);
 
     g_program.set_projection_matrix(g_projection_matrix);
     g_program.set_view_matrix(g_view_matrix);
@@ -172,8 +181,11 @@ void initialise()
 
     // ––––– PLATFORMS ––––– //
     GLuint platform_texture_id = load_texture(PLATFORM_FILEPATH);
+    GLuint landzone_texture_id = load_texture(LANDZONE_FILEPATH);
 
     g_state.platforms = new Entity[PLATFORM_COUNT];
+    g_state.landzones = new Entity[LANDZONE_COUNT];
+
 
     // Set the type of every platform entity to PLATFORM
     for (int i = 0; i < 5; i++)
@@ -182,7 +194,7 @@ void initialise()
         g_state.platforms[i].set_position(glm::vec3(i - 2.0f, -3.0f, 0.0f));
         g_state.platforms[i].set_width(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
+        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
     }
 
     for (int i = 5; i < 10; i++)
@@ -191,7 +203,7 @@ void initialise()
         g_state.platforms[i].set_position(glm::vec3(i - 7.0f, 3.0f, 0.0f));
         g_state.platforms[i].set_width(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
+        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
     }
 
     for (int i = 10; i < 15; i++)
@@ -200,7 +212,8 @@ void initialise()
         g_state.platforms[i].set_position(glm::vec3(-2.0f, i - 12.0f, 0.0f));
         g_state.platforms[i].set_width(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
+        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
+        g_state.platforms[i].deactivate();
     }
 
     for (int i = 15; i < 20; i++)
@@ -209,15 +222,20 @@ void initialise()
         g_state.platforms[i].set_position(glm::vec3(2.0f, i - 17.0f, 0.0f));
         g_state.platforms[i].set_width(1.0f);
         g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, 0);
+        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
     }
 
-   
+    g_state.landzones[0].m_texture_id = landzone_texture_id;
+    g_state.landzones[0].set_position(glm::vec3(-3.0f, 3.0f, 0.0f));
+    g_state.landzones[0].set_width(1.0f);
+    g_state.landzones[0].set_entity_type(LANDZONE);
+    g_state.landzones[0].update(0.0f, g_state.player, NULL, NULL, 0);
 
     // ––––– PLAYER ––––– //
     // Existing
     g_state.player = new Entity();
-    g_state.player->set_position(glm::vec3(0.0f));
+    //g_state.player->set_position(glm::vec3(0.0f));
+    g_state.player->set_position(glm::vec3(-4.0f, 10.0f, 0.0f));
     g_state.player->set_movement(glm::vec3(0.0f));
     g_state.player->set_speed(1.0f);
     g_state.player->set_acceleration(glm::vec3(0.0f, -4.905f, 0.0f));
@@ -233,6 +251,14 @@ void initialise()
     g_state.player->m_animation_rows = 1;
     g_state.player->m_animation_indices = g_state.player->m_animation[0];
 
+    // UI
+    g_state.ui = new Entity();
+    g_state.ui->set_entity_type(UI);
+    g_state.ui->set_position(glm::vec3(0.0f, 0.0f, 0.0f));
+    g_state.ui->set_width(12.0f);
+    g_state.ui->set_height(6.0f);
+    g_state.ui->scale();
+    g_state.ui->deactivate();
 
     // ––––– GENERAL ––––– //
     glEnable(GL_BLEND);
@@ -320,11 +346,21 @@ void update()
 
     while (delta_time >= FIXED_TIMESTEP)
     {
-        g_state.player->update(FIXED_TIMESTEP, g_state.player, g_state.platforms, PLATFORM_COUNT);
+        g_state.player->update(FIXED_TIMESTEP, g_state.player, g_state.platforms, g_state.landzones, PLATFORM_COUNT + LANDZONE_COUNT);
+        //g_state.player->update(FIXED_TIMESTEP, g_state.player, g_state.landzones, LANDZONE_COUNT);
         delta_time -= FIXED_TIMESTEP;
     }
 
     g_accumulator = delta_time;
+     
+    if (g_state.player->m_landed){
+        go = true;
+        win = true;
+    }
+    else if (g_state.player->m_crashed) {
+        go = true;
+    }
+
 
 }
 
@@ -332,9 +368,34 @@ void render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    if (go) {
+        g_state.player->deactivate();
+        for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].deactivate();
+        for (int i = 0; i < LANDZONE_COUNT; i++) g_state.landzones[i].deactivate();
+    }
+
     g_state.player->render(&g_program);
 
     for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].render(&g_program);
+    for (int i = 0; i < LANDZONE_COUNT; i++) g_state.landzones[i].render(&g_program);
+
+
+    
+    
+    
+    if (win && go) {
+        g_state.ui->activate();
+        g_state.ui->m_texture_id = load_texture(WIN_SCREEN);
+        g_state.ui->render(&g_program);
+    }
+    else if (go && !win) {
+        g_state.ui->m_texture_id = load_texture(LOSE_SCREEN);
+        g_state.ui->activate();
+        g_state.ui->render(&g_program);
+    }
+
+
+    
 
     SDL_GL_SwapWindow(g_display_window);
 }

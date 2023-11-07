@@ -15,7 +15,8 @@
 #include "Entity.h"
 
 
-const float GRAVITY = 4.0f;
+const float GRAVITY = 1.0f;
+const float max_accel = 1.0f;
 
 Entity::Entity() {
     // PHYSICS (GRAVITY) 
@@ -33,9 +34,16 @@ Entity::Entity() {
 Entity::~Entity() {};
 
 void Entity::rotate(float angle) {
-    this->m_model_matrix = glm::rotate(this->m_model_matrix, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
-    m_angle += angle;
+    //if ((m_angle + angle >= 0 && m_angle + angle <= 90) || (m_angle + angle >= 270 && m_angle + angle <= 359)) {
+        this->m_model_matrix = glm::rotate(this->m_model_matrix, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
+        m_angle += angle;
+        LOG(angle);
+    //} 
 };
+
+void Entity::scale() {
+    m_model_matrix = glm::scale(m_model_matrix, glm::vec3(m_width, m_height, 1.0));
+}
 
 void Entity::accelerate(float delta_time) {
     float amount_x = 0;
@@ -66,6 +74,14 @@ void Entity::accelerate(float delta_time) {
         m_acceleration.y += amount_y * m_acceleration_rate;
     }
 
+    if (m_velocity.x > max_accel) {
+        m_velocity.x = max_accel;
+    }
+
+    if (m_velocity.y > max_accel) {
+        m_velocity.y = max_accel;
+    }
+
     
 };
 
@@ -77,7 +93,7 @@ void Entity::deactivate() {
 };
 
 
-void Entity::update(float delta_time, Entity* player, Entity* collidable_entities, int collidable_entity_count)
+void Entity::update(float delta_time, Entity* player, Entity* collidable_entities1, Entity* collidable_entities2, int collidable_entity_count)
 {
     if (!m_is_active) return;
 
@@ -120,10 +136,12 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     
 
     m_position.y += m_velocity.y * delta_time;
-    check_collision_y(collidable_entities, collidable_entity_count);
+    check_collision_y(collidable_entities1, collidable_entity_count);
+    check_collision_y(collidable_entities2, collidable_entity_count);
 
     m_position.x += m_velocity.x * delta_time;
-    check_collision_x(collidable_entities, collidable_entity_count);
+    check_collision_x(collidable_entities1, collidable_entity_count);
+    check_collision_x(collidable_entities2, collidable_entity_count);
 
     if (m_collided_bottom) {
         m_acceleration.x = 0;
@@ -155,8 +173,19 @@ void const Entity::check_collision_y(Entity* collidable_entities, int collidable
                 m_position.y += y_overlap;
                 m_velocity.y = 0;
                 m_collided_bottom = true;
+                
             }
+
+            if (collidable_entity->get_entity_type() == LANDZONE) {
+                m_landed = true;
+            }
+            else {
+                m_crashed = true;
+            }
+            
         }
+
+        
     }
 }
 
@@ -179,6 +208,13 @@ void const Entity::check_collision_x(Entity* collidable_entities, int collidable
                 m_position.x += x_overlap;
                 m_velocity.x = 0;
                 m_collided_left = true;
+            }
+
+            if (collidable_entity->get_entity_type() == LANDZONE) {
+                m_landed = true;
+            }
+            else {
+                m_crashed = true;
             }
         }
     }

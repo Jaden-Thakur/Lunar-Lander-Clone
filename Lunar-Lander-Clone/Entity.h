@@ -1,4 +1,4 @@
-enum EntityType { PLATFORM, PLAYER };
+enum EntityType { PLATFORM, PLAYER, LANDZONE, UI };
 
 class Entity
 {
@@ -45,6 +45,8 @@ public:
 	bool m_collided_bottom = false;
 	bool m_collided_left = false;
 	bool m_collided_right = false;
+	bool m_crashed = false;
+	bool m_landed = false;
 
 	// TEXTURE
 	GLuint m_texture_id;
@@ -58,13 +60,14 @@ public:
 	Entity();
 	~Entity();
 
-	void update(float delta_time, Entity* player, Entity* collidatble_entities, int collidable_entity_count);
+	void scale();
+	void update(float delta_time, Entity* player, Entity* collidatble_entities1, Entity* collidatble_entities2, int collidable_entity_count);
 	void draw_sprite_from_texture_atlas(ShaderProgram* program, GLuint texture_id, int index);
 	void render(ShaderProgram* program);
 
 	bool const check_collision(Entity* collided_entity) const;
 	void const check_collision_y(Entity* collidable_entities, int collidable_entity_count);
-	void const check_collision_x(Entity* collidable_entities, int collidable_entity_count);
+	void const check_collision_x(Entity*  , int collidable_entity_count);
 
 	void rotate(float angle);
 	void accelerate(float delta_time);
