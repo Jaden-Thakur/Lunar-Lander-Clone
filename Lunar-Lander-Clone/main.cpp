@@ -14,8 +14,9 @@
 #define LOG(argument) std::cout << argument << std::endl;
 #define STB_IMAGE_IMPLEMENTATION
 #define FIXED_TIMESTEP 0.0166666f
-#define PLATFORM_COUNT 20
-#define LANDZONE_COUNT 1
+#define LANDZONE_COUNT 5
+#define PLATFORM_COUNT 222 - LANDZONE_COUNT
+
 
 #ifdef _WINDOWS
 #include <GL/glew.h>
@@ -35,8 +36,10 @@
 #include <ctime>
 #include <cstdlib>
 #include <vector>
+#include <time.h>
 
-// ––––– STRUCTS AND ENUMS ––––– //
+
+
 struct GameState
 {
     Entity* player;
@@ -45,7 +48,7 @@ struct GameState
     Entity* ui;
 };
 
-// ––––– CONSTANTS ––––– //
+// Globals 
 const int WINDOW_WIDTH = 1000,
 WINDOW_HEIGHT = 600;
 
@@ -73,22 +76,7 @@ const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0;
 const GLint TEXTURE_BORDER = 0;
 
-const int CD_QUAL_FREQ = 44100,
-AUDIO_CHAN_AMT = 2,     // stereo
-AUDIO_BUFF_SIZE = 4096;
 
-const char BGM_FILEPATH[] = "assets/crypto.mp3", // change
-SFX_FILEPATH[] = "assets/bounce.wav"; // change
-
-const int PLAY_ONCE = 0,    // play once, loop never
-NEXT_CHNL = -1,   // next available channel
-ALL_SFX_CHNL = -1;
-
-
-Mix_Music* g_music;
-Mix_Chunk* g_jump_sfx;
-
-// ––––– GLOBAL VARIABLES ––––– //
 GameState g_state;
 
 SDL_Window* g_display_window;
@@ -101,8 +89,9 @@ glm::mat4 g_view_matrix, g_projection_matrix;
 
 float g_previous_ticks = 0.0f;
 float g_accumulator = 0.0f;
+int randint;
 
-// ––––– GENERAL FUNCTIONS ––––– //
+// Useful Functions
 GLuint load_texture(const char* filepath)
 {
     int width, height, number_of_components;
@@ -146,7 +135,7 @@ void initialise()
     glewInit();
 #endif
 
-    // ––––– VIDEO ––––– //
+    // Viewport Setup 
     glViewport(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 
     g_program.load(V_SHADER_PATH, F_SHADER_PATH);
@@ -161,81 +150,63 @@ void initialise()
 
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
 
-    // ––––– BGM ––––– //
-    Mix_OpenAudio(CD_QUAL_FREQ, MIX_DEFAULT_FORMAT, AUDIO_CHAN_AMT, AUDIO_BUFF_SIZE);
 
-    // STEP 1: Have openGL generate a pointer to your music file
-    g_music = Mix_LoadMUS(BGM_FILEPATH); // works only with mp3 files
-
-    // STEP 2: Play music
-    Mix_PlayMusic(
-        g_music,  // music file
-        -1        // -1 means loop forever; 0 means play once, look never
-    );
-
-    // STEP 3: Set initial volume
-    Mix_VolumeMusic(MIX_MAX_VOLUME / 5.0);
-
-    // ––––– SFX ––––– //
-    g_jump_sfx = Mix_LoadWAV(SFX_FILEPATH);
-
-    // ––––– PLATFORMS ––––– //
+    // Platforms and Landing Zones
     GLuint platform_texture_id = load_texture(PLATFORM_FILEPATH);
     GLuint landzone_texture_id = load_texture(LANDZONE_FILEPATH);
 
     g_state.platforms = new Entity[PLATFORM_COUNT];
     g_state.landzones = new Entity[LANDZONE_COUNT];
 
+    
+    std::vector<int> platform_heights = {11, 10, 9, 8, 7, 7, 8, 7, 7, 6, 6, 5, 5, 6, 6, 6, 7, 7, 8, 9, 10, 10, 9, 7, 5, 5, 6, 6, 7, 7, 5};
+    int platform_count = 0;
+    int landzone_counter = 0;
 
-    // Set the type of every platform entity to PLATFORM
-    for (int i = 0; i < 5; i++)
-    {
-        g_state.platforms[i].m_texture_id = platform_texture_id;
-        g_state.platforms[i].set_position(glm::vec3(i - 2.0f, -3.0f, 0.0f));
-        g_state.platforms[i].set_width(1.0f);
-        g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
+    std::vector<int> landzone_locations;
+    srand(time(0));
+    for (int i = 0; i < LANDZONE_COUNT; i++) {
+        randint = std::rand() % 31;
+        if (std::find(landzone_locations.begin(), landzone_locations.end(), randint) == landzone_locations.end()) {
+            landzone_locations.emplace_back(randint);
+        }
+        else {
+            i--;
+        }
+        
     }
-
-    for (int i = 5; i < 10; i++)
-    {
-        g_state.platforms[i].m_texture_id = platform_texture_id;
-        g_state.platforms[i].set_position(glm::vec3(i - 7.0f, 3.0f, 0.0f));
-        g_state.platforms[i].set_width(1.0f);
-        g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
+    
+    // Create platforms
+    for (int j = 0; j < 31; j++) {
+        for (int i = 0; i < platform_heights[j] ; i++)
+            {
+            bool found = std::find(landzone_locations.begin(), landzone_locations.end(), j) == landzone_locations.end();
+                if (landzone_counter != LANDZONE_COUNT && (i == platform_heights[j]-1) && found) {
+                    g_state.landzones[landzone_counter].m_texture_id = landzone_texture_id;
+                    g_state.landzones[landzone_counter].set_position(glm::vec3(j - 15.0f, i - 10.0f, 0.0f));
+                    g_state.landzones[landzone_counter].set_width(1.0f);
+                    g_state.landzones[landzone_counter].scale();
+                    g_state.landzones[landzone_counter].set_entity_type(LANDZONE);
+                    g_state.landzones[landzone_counter].update(0.0f, g_state.player, NULL, NULL, 0);
+                    landzone_counter++;
+                }
+                else {
+                    g_state.platforms[platform_count].m_texture_id = platform_texture_id;
+                    g_state.platforms[platform_count].set_entity_type(PLATFORM);
+                    g_state.platforms[platform_count].set_position(glm::vec3(j - 15.0f, i - 10.0f, 0.0f));
+                    g_state.platforms[platform_count].set_width(1.0f);
+                    g_state.platforms[platform_count].scale();
+                    g_state.platforms[platform_count].update(0.0f, g_state.player, NULL, NULL, 0);
+                    platform_count++;
+                }     
+            }
     }
+    
 
-    for (int i = 10; i < 15; i++)
-    {
-        g_state.platforms[i].m_texture_id = platform_texture_id;
-        g_state.platforms[i].set_position(glm::vec3(-2.0f, i - 12.0f, 0.0f));
-        g_state.platforms[i].set_width(1.0f);
-        g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
-        g_state.platforms[i].deactivate();
-    }
-
-    for (int i = 15; i < 20; i++)
-    {
-        g_state.platforms[i].m_texture_id = platform_texture_id;
-        g_state.platforms[i].set_position(glm::vec3(2.0f, i - 17.0f, 0.0f));
-        g_state.platforms[i].set_width(1.0f);
-        g_state.platforms[i].set_entity_type(PLATFORM);
-        g_state.platforms[i].update(0.0f, g_state.player, NULL, NULL, 0);
-    }
-
-    g_state.landzones[0].m_texture_id = landzone_texture_id;
-    g_state.landzones[0].set_position(glm::vec3(-3.0f, 3.0f, 0.0f));
-    g_state.landzones[0].set_width(1.0f);
-    g_state.landzones[0].set_entity_type(LANDZONE);
-    g_state.landzones[0].update(0.0f, g_state.player, NULL, NULL, 0);
-
-    // ––––– PLAYER ––––– //
-    // Existing
+    // Player Stuff
+    // Create Player
     g_state.player = new Entity();
-    //g_state.player->set_position(glm::vec3(0.0f));
-    g_state.player->set_position(glm::vec3(-4.0f, 10.0f, 0.0f));
+    g_state.player->set_position(glm::vec3(-14.0f, 9.0f, 0.0f));
     g_state.player->set_movement(glm::vec3(0.0f));
     g_state.player->set_speed(1.0f);
     g_state.player->set_acceleration(glm::vec3(0.0f, -4.905f, 0.0f));
@@ -260,15 +231,18 @@ void initialise()
     g_state.ui->scale();
     g_state.ui->deactivate();
 
-    // ––––– GENERAL ––––– //
+    // Needed stuff
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void process_input()
 {
+    
+    // Stop player from moving without input
     g_state.player->set_movement(glm::vec3(0.0f));
 
+    // One Click Events
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -287,7 +261,6 @@ void process_input()
             case SDLK_SPACE:
                 // Accelerate
                 g_state.player->m_is_accelerating = true;
-                
                 break;
             default:
                 break;
@@ -298,15 +271,13 @@ void process_input()
     }
 
     
-
+    // Holding Down Keys
     const Uint8* key_state = SDL_GetKeyboardState(NULL);
 
-    //if (key_state[SDL_SCANCODE_LEFT])
     if (key_state[SDL_SCANCODE_A])
     {
         g_state.player->rotate(0.025);
     }
-    //else if (key_state[SDL_SCANCODE_RIGHT])
     if (key_state[SDL_SCANCODE_D])
     {
         g_state.player->rotate(-0.025);
@@ -332,6 +303,7 @@ void process_input()
 
 void update()
 {
+    // delta time
     float ticks = (float)SDL_GetTicks() / MILLISECONDS_IN_SECOND;
     float delta_time = ticks - g_previous_ticks;
     g_previous_ticks = ticks;
@@ -347,18 +319,27 @@ void update()
     while (delta_time >= FIXED_TIMESTEP)
     {
         g_state.player->update(FIXED_TIMESTEP, g_state.player, g_state.platforms, g_state.landzones, PLATFORM_COUNT + LANDZONE_COUNT);
-        //g_state.player->update(FIXED_TIMESTEP, g_state.player, g_state.landzones, LANDZONE_COUNT);
         delta_time -= FIXED_TIMESTEP;
     }
 
     g_accumulator = delta_time;
      
+
+    // Win and Lose States
     if (g_state.player->m_landed){
-        go = true;
-        win = true;
+        if (g_state.player->m_collided_bottom) {
+            go = true;
+            win = true;
+            g_state.player->m_landed = false;
+        }
+        else {
+            g_state.player->m_landed = false;
+            g_state.player->m_crashed = true;
+        }
     }
     else if (g_state.player->m_crashed) {
         go = true;
+        g_state.player->m_crashed = false;
     }
 
 
@@ -368,35 +349,32 @@ void render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // deactivate all of the platforms and player on game over
     if (go) {
         g_state.player->deactivate();
         for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].deactivate();
         for (int i = 0; i < LANDZONE_COUNT; i++) g_state.landzones[i].deactivate();
     }
 
+    // render everything except UI
     g_state.player->render(&g_program);
 
     for (int i = 0; i < PLATFORM_COUNT; i++) g_state.platforms[i].render(&g_program);
     for (int i = 0; i < LANDZONE_COUNT; i++) g_state.landzones[i].render(&g_program);
-
-
     
-    
-    
+    // render UI elements based on win or lose
     if (win && go) {
         g_state.ui->activate();
         g_state.ui->m_texture_id = load_texture(WIN_SCREEN);
         g_state.ui->render(&g_program);
     }
     else if (go && !win) {
-        g_state.ui->m_texture_id = load_texture(LOSE_SCREEN);
         g_state.ui->activate();
+        g_state.ui->m_texture_id = load_texture(LOSE_SCREEN);
         g_state.ui->render(&g_program);
     }
 
-
-    
-
+    // Swap window
     SDL_GL_SwapWindow(g_display_window);
 }
 
@@ -404,11 +382,15 @@ void shutdown()
 {
     SDL_Quit();
 
+
+    // delete everything 
     delete[] g_state.platforms;
+    delete[] g_state.landzones;
+    delete g_state.ui;
     delete g_state.player;
 }
 
-// ––––– GAME LOOP ––––– //
+// GAME LOOP
 int main(int argc, char* argv[])
 {
     initialise();

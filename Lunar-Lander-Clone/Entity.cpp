@@ -26,6 +26,7 @@
 
 
 const float GRAVITY = 1.0f;
+const float AIR_RESISTANCE = 0.5f;
 const float max_accel = 1.0f;
 
 Entity::Entity() {
@@ -41,10 +42,12 @@ Entity::Entity() {
     m_model_matrix = glm::mat4(1.0f);
 }
 
-Entity::~Entity() {};
+Entity::~Entity() {
+    delete[] m_animation;
+};
 
 void Entity::rotate(float angle) {
-    //if ((m_angle + angle >= 0 && m_angle + angle <= 90) || (m_angle + angle >= 270 && m_angle + angle <= 359)) {
+    //if ((m_angle + angle <= 90) || (m_angle + angle >= 270 && m_angle + angle <= 359)) {
         this->m_model_matrix = glm::rotate(this->m_model_matrix, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
         m_angle += angle;
         LOG(angle);
@@ -52,13 +55,15 @@ void Entity::rotate(float angle) {
 };
 
 void Entity::scale() {
+    // scales model to current height and width, yes you have to set the height and width first Jaden was lazy
     m_model_matrix = glm::scale(m_model_matrix, glm::vec3(m_width, m_height, 1.0));
 }
 
 void Entity::accelerate(float delta_time) {
     float amount_x = 0;
     float amount_y = 0;
-    // choosing direction of acceleration
+
+    // choosing direction of acceleration and accelerating in that direction
     if (0 <= m_angle && m_angle <= 90) {
         amount_x = (m_angle / 90);
         amount_y = 1 - amount_x;
@@ -107,14 +112,14 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
 {
     if (!m_is_active) return;
 
+    // collision checks
     m_collided_top = false;
     m_collided_bottom = false;
     m_collided_left = false;
     m_collided_right = false;
 
   
-    //// ����� FLYING ����� //
-
+    // replace negative angles with correct positive angle
     if (m_angle > 359) {
         m_angle = m_angle - 360.0f;
     }
@@ -122,9 +127,10 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
         m_angle += 360;
     }
 
+
+    // accelerate only when player clicks space
     if (m_is_accelerating)
     {
-        // STEP 1: Immediately return the flag to its original false state
         m_is_accelerating = false;
         accelerate(delta_time); 
     }
@@ -134,14 +140,16 @@ void Entity::update(float delta_time, Entity* player, Entity* collidable_entitie
     }
     
 
-    // ����� GRAVITY ����� //
+    // gravity
     m_velocity += m_acceleration * delta_time;
-    m_velocity.y -= 2.0 * delta_time;
+    m_velocity.y -= GRAVITY * delta_time;
+
+    // air resistance
     if (m_velocity.x > 0) {
-        m_velocity.x -= 0.5 * delta_time;
+        m_velocity.x -= AIR_RESISTANCE * delta_time;
     }
     else if (m_velocity.x < 0) {
-        m_velocity.x += 0.5 * delta_time; 
+        m_velocity.x += AIR_RESISTANCE * delta_time;
     }
     
 
